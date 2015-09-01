@@ -77,9 +77,21 @@ PointerEventsPolyfill.prototype.register_mouse_events = function(){
 
            if (options.classForActiveElements.length) {
                if ((e.type != 'mouseover' && e.type != 'mousemove')) {
-                   $(underneathElem).removeClass(options.classForActiveElements);
+                   if ($(underneathElem).prop('tagName') == 'A') {
+                        $(underneathElem).removeClass(options.classForActiveElements);
+                   } else if ($(underneathElem).parents('a').length) {
+                        $(underneathElem).parents('a').removeClass(options.classForActiveElements);
+                   } else {
+                        $(underneathElem).removeClass(options.classForActiveElements);
+                   }
                } else if (!$(underneathElem).hasClass(options.classForActiveElements)) {
-                   $(underneathElem).addClass(options.classForActiveElements);
+                   if ($(underneathElem).prop('tagName') == 'A') {
+                        $(underneathElem).addClass(options.classForActiveElements);
+                   } else if ($(underneathElem).parents('a').length) {
+                        $(underneathElem).parents('a').addClass(options.classForActiveElements);
+                   } else {
+                        $(underneathElem).addClass(options.classForActiveElements);
+                   }
                }
            }
 
