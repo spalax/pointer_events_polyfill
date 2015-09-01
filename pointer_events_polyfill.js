@@ -54,7 +54,8 @@ PointerEventsPolyfill.initialize = function(options){
 
 // handle mouse events w/ support for pointer-events: none
 PointerEventsPolyfill.prototype.register_mouse_events = function(){
-    var options = this.options;
+    var options = this.options,
+        elementsToClean = [];
     // register on all elements (and all future elements) matching the selector
     $(document).on(this.options.mouseEvents.join(" "), this.options.selector, function(e){
        if($(this).css('pointer-events') == 'none'){
@@ -62,35 +63,36 @@ PointerEventsPolyfill.prototype.register_mouse_events = function(){
              var origDisplayAttribute = $(this).css('display');
              $(this).css('display','none');
 
-             var underneathElem = document.elementFromPoint(e.clientX, e.clientY);
-           console.log($(underneathElem).prop('tagName'), e.type);
+             var underneathElem = document.elementFromPoint(e.clientX, e.clientY),
+                 $underneathElem = $(underneathElem);
+           console.log($underneathElem.prop('tagName'), e.type);
            if (options.cursorPointerOnMask) {
                if ((e.type != 'mouseover' && e.type != 'mousemove') ||
-                   ($(underneathElem).prop('tagName') != 'A' &&
-                   !$(underneathElem).parents('a').length)) {
+                   ($underneathElem.prop('tagName') != 'A' &&
+                    !$underneathElem.parents('a').length)) {
                    $(this).css('cursor', '');
                } else if ($(this).css('cursor') != 'pointer' &&
-                            ($(underneathElem).parents('a').length || $(underneathElem).prop('tagName') == 'A')) {
+                            ($underneathElem.parents('a').length ||
+                                $underneathElem.prop('tagName') == 'A')) {
                    $(this).css('cursor', 'pointer');
                }
            }
 
            if (options.classForActiveElements.length) {
                if ((e.type != 'mouseover' && e.type != 'mousemove')) {
-                   if ($(underneathElem).prop('tagName') == 'A') {
-                        $(underneathElem).removeClass(options.classForActiveElements);
-                   } else if ($(underneathElem).parents('a').length) {
-                        $(underneathElem).parents('a').removeClass(options.classForActiveElements);
+                   $(elementsToClean).each(function (k, v) {
+                       $(v).removeClass(options.classForActiveElements);
+                   })
+               } else if (!$underneathElem.hasClass(options.classForActiveElements)) {
+                   if ($underneathElem.prop('tagName') == 'A') {
+                        $underneathElem.addClass(options.classForActiveElements);
+                        elementsToClean.push($underneathElem);
+                   } else if ($underneathElem.parents('a').length) {
+                        $underneathElem.parents('a').addClass(options.classForActiveElements);
+                        elementsToClean.push($underneathElem.parents('a'));
                    } else {
-                        $(underneathElem).removeClass(options.classForActiveElements);
-                   }
-               } else if (!$(underneathElem).hasClass(options.classForActiveElements)) {
-                   if ($(underneathElem).prop('tagName') == 'A') {
-                        $(underneathElem).addClass(options.classForActiveElements);
-                   } else if ($(underneathElem).parents('a').length) {
-                        $(underneathElem).parents('a').addClass(options.classForActiveElements);
-                   } else {
-                        $(underneathElem).addClass(options.classForActiveElements);
+                        $underneathElem.addClass(options.classForActiveElements);
+                        elementsToClean.push($underneathElem);
                    }
                }
            }
@@ -104,7 +106,7 @@ PointerEventsPolyfill.prototype.register_mouse_events = function(){
              // fire the mouse event on the element below
             e.target = underneathElem;
 
-            $(underneathElem).trigger(e);
+            $underneathElem.trigger(e);
 
             e.stopPropagation();
             return false;
