@@ -9,6 +9,8 @@ function PointerEventsPolyfill(options){
     this.options = {
         selector: '*',
         mouseEvents: ['click','dblclick','mousedown','mouseup'],
+        cursorPointerOnMask: false,
+        classForActiveElements: '',
         usePolyfillIf: function(){
             if(navigator.appName == 'Microsoft Internet Explorer')
             {
@@ -23,11 +25,21 @@ function PointerEventsPolyfill(options){
         }
     };
     if(options){
-        var obj = this;
-        $.each(options, function(k,v){
-          obj.options[k] = v;
-        });
+        $.extend( true, this.options, options);
     }
+
+    if (this.options.cursorPointerOnMask === true) {
+        if ($.inArray('mouseover', this.options.mouseEvents) == -1) {
+            this.options.mouseEvents.push('mouseover');
+        }
+        if ($.inArray('mouseleave', this.options.mouseEvents) == -1) {
+            this.options.mouseEvents.push('mouseleave');
+        }
+        if ($.inArray('mousemove', this.options.mouseEvents) == -1) {
+            this.options.mouseEvents.push('mousemove');
+        }
+    }
+
 
     if(this.options.usePolyfillIf())
       this.register_mouse_events();
@@ -42,6 +54,7 @@ PointerEventsPolyfill.initialize = function(options){
 
 // handle mouse events w/ support for pointer-events: none
 PointerEventsPolyfill.prototype.register_mouse_events = function(){
+    var options = this.options;
     // register on all elements (and all future elements) matching the selector
     $(document).on(this.options.mouseEvents.join(" "), this.options.selector, function(e){
        if($(this).css('pointer-events') == 'none'){
@@ -50,17 +63,38 @@ PointerEventsPolyfill.prototype.register_mouse_events = function(){
              $(this).css('display','none');
 
              var underneathElem = document.elementFromPoint(e.clientX, e.clientY);
+           console.log($(underneathElem).prop('tagName'), e.type);
+           if (options.cursorPointerOnMask) {
+               if ((e.type != 'mouseover' && e.type != 'mousemove') ||
+                   ($(underneathElem).prop('tagName') != 'A' &&
+                   !$(underneathElem).parents('a').length)) {
+                   $(this).css('cursor', '');
+               } else if ($(this).css('cursor') != 'pointer' &&
+                            ($(underneathElem).parents('a').length || $(underneathElem).prop('tagName') == 'A')) {
+                   $(this).css('cursor', 'pointer');
+               }
+           }
 
-            if(origDisplayAttribute)
-                $(this)
-                    .css('display', origDisplayAttribute);
-            else
-                $(this).css('display','');
+           if (options.classForActiveElements.length) {
+               if ((e.type != 'mouseover' && e.type != 'mousemove')) {
+                   $(underneathElem).removeClass(options.classForActiveElements);
+               } else if (!$(underneathElem).hasClass(options.classForActiveElements)) {
+                   $(underneathElem).addClass(options.classForActiveElements);
+               }
+           }
+
+            if(origDisplayAttribute) {
+                $(this).css('display', origDisplayAttribute);
+            } else {
+                $(this).css('display', '');
+            }
 
              // fire the mouse event on the element below
             e.target = underneathElem;
+
             $(underneathElem).trigger(e);
 
+            e.stopPropagation();
             return false;
         }
         return true;
